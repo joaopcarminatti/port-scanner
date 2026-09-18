@@ -12,34 +12,38 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementação de PortScanner que usa a técnica de TCP Connect Scan:
- * para cada porta na faixa solicitada, tenta abrir uma conexão TCP
- * e traduz o resultado (sucesso, RST, timeout) em um PortState.
- * Esta versão é sequencial — testa uma porta por vez.
+ * Esqueleto comum para implementações de PortScanner que usam TCP connect.
+ * Cuida da orquestração (medir tempo, montar ScanResult) e da lógica de
+ * testar uma porta específica (probe). Deixa para as subclasses decidir
+ * COMO iterar sobre a faixa de portas — sequencial ou paralela.
  */
-public class TcpConnectScanner implements PortScanner {
+public abstract class AbstractPortScanner implements PortScanner {
 
     @Override
     public ScanResult scan(ScanRequest request) {
         Instant start = Instant.now();
 
-        List<Port> results = new ArrayList<>();
-
-        for (int portNumber = request.getStartPort(); portNumber <= request.getEndPort(); portNumber++) {
-            PortState state = probe(request, portNumber);
-            results.add(new Port(portNumber, state));
-        }
+        List<Port> results = executeScan(request);
 
         Duration elapsed = Duration.between(start, Instant.now());
 
         return new ScanResult(request.getTarget(), results, elapsed);
     }
 
-    private PortState probe(ScanRequest request, int portNumber) {
+    /**
+     * Cada subclasse decide como percorrer a faixa e produzir a lista de Ports.
+     * Sequencial testa uma por vez; paralela dispara várias em threads simultâneas.
+     */
+    protected abstract List<Port> executeScan(ScanRequest request);
+
+    /**
+     * Testa uma porta específica e devolve seu estado.
+     * Método compartilhado por todas as subclasses — ninguém reimplementa a lógica TCP.
+     */
+    protected PortState probe(ScanRequest request, int portNumber) {
         InetSocketAddress endpoint = new InetSocketAddress(
                 request.getTarget().getAddress(),
                 portNumber
