@@ -73,11 +73,19 @@ O `Main` orquestra: parse via `CliParser`, construção de objetos de domínio, 
 - Redes: TCP three-way handshake, portas well-known, técnica de TCP connect scan
 - Arquitetura: Single Responsibility, Open/Closed, fail-fast na construção
 
-## Aviso legal
+## Rodando os testes
 
-Esta ferramenta deve ser usada **apenas contra sistemas próprios ou com autorização
-explícita do responsável**. Varredura de portas não autorizada pode configurar crime
-conforme a legislação brasileira (Lei 12.737/2012 — Marco Civil da Internet).
+Requer JDK 17+ e Maven.
 
-Para testes: `127.0.0.1` (localhost), sua própria rede local, ou `scanme.nmap.org`
-(servidor mantido pelo projeto Nmap para testes autorizados).
+```bash
+mvn test
+```
+
+O projeto tem **68 testes automatizados** com JUnit 5 cobrindo:
+
+- Validação de domínio (`Port`, `Target`, `ScanRequest`)
+- Parser de linha de comando (`CliParser`)
+- Registro de serviços (`ServiceRegistry`)
+- Apresentação de resultados (`ConsoleFormatter`)
+
+Os testes do formatter usam um `MockPortScanner` — implementação falsa da interface `PortScanner` que não toca em rede. Isso demonstra o valor prático do design com interfaces: qualquer implementação de scanner pode ser substituída sem afetar o resto do sistema.
